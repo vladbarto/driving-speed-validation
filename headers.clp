@@ -31,7 +31,7 @@
 (defglobal ?*sim-in-debug* = FALSE)
 ; (defglobal ?*percepts-in-debug* = FALSE)
 (defglobal ?*percepts-in-debug* = FALSE)
-(defglobal ?*perceptsDir* = "./Teste/perceptiiTest05/")
+(defglobal ?*perceptsDir* = "./Teste/Test_Localitate_C/")
 
 
 (deftemplate PERCEPT-MANAGER::timp (slot valoare))
