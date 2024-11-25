@@ -11,22 +11,31 @@
     ;(facts AGENT)
 )
 
-(defrule AGENT::initCycle-right-turn
-    (declare (salience 89))
-    (timp (valoare ?)) ;make sure it fires each cycle
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>initCycle-right-turn prohibited by default " crlf))
-    (assert (ag_bel (bel_type moment) (bel_pname right-turn-maneuver) (bel_pval prohibited))) ;by default, we assume overtaking NOT valid
-    ;(facts AGENT)
-)
+; (defrule AGENT::initCycle-right-turn
+;     (declare (salience 89))
+;     (timp (valoare ?)) ;make sure it fires each cycle
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>initCycle-right-turn prohibited by default " crlf))
+;     (assert (ag_bel (bel_type moment) (bel_pname right-turn-maneuver) (bel_pval prohibited))) ;by default, we assume overtaking NOT valid
+;     ;(facts AGENT)
+; )
 
-(defrule AGENT::initCycle-left-turn
+; (defrule AGENT::initCycle-left-turns
+;     (declare (salience 89))
+;     (timp (valoare ?)) ;make sure it fires each cycle
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>initCycle-left-turn prohibited by default " crlf))
+;     (assert (ag_bel (bel_type moment)  (bel_pname left-turn-maneuver) (bel_pval prohibited))) ;by default, we assume overtaking NOT valid
+;     ;(facts AGENT)
+; )
+
+(defrule AGENT::initCycle-viteza
     (declare (salience 89))
-    (timp (valoare ?)) ;make sure it fires each cycle
+    (timp (valoare ?))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>initCycle-left-turn prohibited by default " crlf))
-    (assert (ag_bel (bel_type moment)  (bel_pname left-turn-maneuver) (bel_pval prohibited))) ;by default, we assume overtaking NOT valid
-    ;(facts AGENT)
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>initCycle-viteza is 50 by default" crlf))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 50)))
+    (facts AGENT)
 )
 
 ;;----------------------------------
@@ -140,105 +149,216 @@
 ;;----------------------------------
 
 ;--- Sign forbidding right turn or forcing either go ahead or left turn
-(defrule AGENT::r-no-right-turn-sign
-    (timp (valoare ?t))
-    (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
-    (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval ?v&interzis_viraj_dreapta | obligatoriu_inainte | obligatoriu_stanga | obligatoriu_inainte_stanga))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-right-turn-sign" crlf))
-    (assert (ag_bel (bel_type fluent) (bel_pname no-right-turn-zone) (bel_pval yes)))
-    ;(facts AGENT)
-)
+; (defrule AGENT::r-no-right-turn-sign
+;     (timp (valoare ?t))
+;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
+;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval ?v&interzis_viraj_dreapta | obligatoriu_inainte | obligatoriu_stanga | obligatoriu_inainte_stanga))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-right-turn-sign" crlf))
+;     (assert (ag_bel (bel_type fluent) (bel_pname no-right-turn-zone) (bel_pval yes)))
+;     ;(facts AGENT)
+; )
 
-(defrule AGENT::r-no-right-turn-zone-end
-    (timp (valoare ?t))
-    ?f <- (ag_bel (bel_type fluent) (bel_pname no-right-turn-zone) (bel_pval yes))
-    (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval area_limit))
-    (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval intersection_end))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-right-turn-zone-end we crossed an intersection" crlf))
-    (retract ?f)
-)
+; (defrule AGENT::r-no-right-turn-zone-end
+;     (timp (valoare ?t))
+;     ?f <- (ag_bel (bel_type fluent) (bel_pname no-right-turn-zone) (bel_pval yes))
+;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval area_limit))
+;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval intersection_end))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-right-turn-zone-end we crossed an intersection" crlf))
+;     (retract ?f)
+; )
 
- ;--- Sign forbidding access on a street
-(defrule AGENT::r-no-access
-    (timp (valoare ?t))
-    (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
-    (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval ?v& accesul_interzis | circulatia_interzisa_in_ambele_sensuri))
-    ;;;(ag_bel (bel_pobj ?ps) (bel_pname direction) (bel_pval ?pd& right | left))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-access" crlf))
-    (assert (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes)))
-    ;(facts AGENT)
-)
+;  ;--- Sign forbidding access on a street
+; (defrule AGENT::r-no-access
+;     (timp (valoare ?t))
+;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
+;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval ?v& accesul_interzis | circulatia_interzisa_in_ambele_sensuri))
+;     ;;;(ag_bel (bel_pobj ?ps) (bel_pname direction) (bel_pval ?pd& right | left))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-access" crlf))
+;     (assert (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes)))
+;     ;(facts AGENT)
+; )
 
-;-----Validate intention of right-turn: check if there is any restriction ----------
-(defrule AGENT::validate-right-turn
-    (declare (salience -10))
-    ?f <- (ag_bel (bel_type moment) (bel_pname right-turn-maneuver) (bel_pval prohibited))
-    (not (ag_bel (bel_type fluent) (bel_pname no-right-turn-zone) (bel_pval yes)))
-    ;(not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes) (bel_pdir right)))
-    ;; TODO: manage direction
-    (not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes)))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>validate-right-turn NU->DA (nu avem restrictii) " crlf))
-    (retract ?f)
-    (assert (ag_bel (bel_type moment) (bel_pname right-turn-maneuver) (bel_pval allowed)))
-    ;(facts AGENT)
-)
+; ;-----Validate intention of right-turn: check if there is any restriction ----------
+; (defrule AGENT::validate-right-turn
+;     (declare (salience -10))
+;     ?f <- (ag_bel (bel_type moment) (bel_pname right-turn-maneuver) (bel_pval prohibited))
+;     (not (ag_bel (bel_type fluent) (bel_pname no-right-turn-zone) (bel_pval yes)))
+;     ;(not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes) (bel_pdir right)))
+;     ;; TODO: manage direction
+;     (not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes)))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>validate-right-turn NU->DA (nu avem restrictii) " crlf))
+;     (retract ?f)
+;     (assert (ag_bel (bel_type moment) (bel_pname right-turn-maneuver) (bel_pval allowed)))
+;     ;(facts AGENT)
+; )
+
+
+; ;;----------------------------------
+; ;;
+; ;;    Left turn
+; ;;
+; ;;----------------------------------
+
+; ;--Sign forbidding access on a street to the left dealt by r-no-access rule
+; ;--continuous line presence checked by rmlc rule
+; ;--TODO: roundabout
+
+; ;--- Sign forbidding left turn or forcing either go ahead or right turn
+; (defrule AGENT::r-no-left-turn-sign
+;     (timp (valoare ?t))
+;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
+;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval ?v&interzis_viraj_stanga | obligatoriu_inainte | obligatoriu_dreapta | obligatoriu_inainte_dreapta | intersectie_cu_sens_giratoriu))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-left-turn-sign" ?v crlf))
+;     (assert (ag_bel (bel_type fluent) (bel_pname no-left-turn-zone) (bel_pval yes)))
+;     ;(facts AGENT)
+; )
+
+; (defrule AGENT::r-no-left-turn-zone-end
+;     (timp (valoare ?t))
+;     ?f <- (ag_bel (bel_type fluent) (bel_pname no-left-turn-zone) (bel_pval yes))
+;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval area_limit))
+;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval area_limit))
+;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval intersection_end))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-left-turn-zone-end we crossed an intersection" crlf))
+;     (retract ?f)
+; )
+
+; ;-----Validate intention of left-turn: check if there is any restriction ----------
+; (defrule AGENT::validate-left-turn
+;     (declare (salience -10))
+;     ?f <- (ag_bel (bel_type moment) (bel_pname left-turn-maneuver) (bel_pval prohibited))
+;     (not (ag_bel (bel_type fluent) (bel_pname no-left-turn-zone) (bel_pval yes)))
+;     ;(not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes) (bel_pdir left)))
+;     ;; TODO: manage direction
+;      (not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes)))
+;     (not (ag_bel (bel_type moment) (bel_pname continuous-line-marking) (bel_pval yes)))
+; ;roundabout
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>validate-left-turn NU->DA (nu avem restrictii) " crlf))
+;     (retract ?f)
+;     (assert (ag_bel (bel_type moment) (bel_pname left-turn-maneuver) (bel_pval allowed)))
+;     ;(facts AGENT)
+; )
 
 
 ;;----------------------------------
 ;;
-;;    Left turn
+;;    Situatie 1
+;;    European 100 - Localitate 50 - European 100
 ;;
 ;;----------------------------------
+; (defrule AGENT::speed-allowed-130
+;     (timp (valoare ?t))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 130))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D> vad indicator " viteza_maxima_admisa " 130" crlf))
+;     (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 130)))
+;     ;(facts AGENT)
+; )
 
-;--Sign forbidding access on a street to the left dealt by r-no-access rule
-;--continuous line presence checked by rmlc rule
-;--TODO: roundabout
+; (defrule AGENT::speed-allowed-100
+;     (timp (valoare ?t))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 100))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>vad indicator " viteza_maxima_admisa " 100" crlf))
+;     (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 100)))
+;     ;(facts AGENT)
+; )
 
-;--- Sign forbidding left turn or forcing either go ahead or right turn
-(defrule AGENT::r-no-left-turn-sign
-    (timp (valoare ?t))
-    (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
-    (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval ?v&interzis_viraj_stanga | obligatoriu_inainte | obligatoriu_dreapta | obligatoriu_inainte_dreapta | intersectie_cu_sens_giratoriu))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-left-turn-sign" ?v crlf))
-    (assert (ag_bel (bel_type fluent) (bel_pname no-left-turn-zone) (bel_pval yes)))
-    ;(facts AGENT)
-)
+; (defrule AGENT::speed-allowed-90
+;     (timp (valoare ?t))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 90))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>vad indicator " viteza_maxima_admisa " 90" crlf))
+;     (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 90)))
+;     ;(facts AGENT)
+; )
 
-(defrule AGENT::r-no-left-turn-zone-end
-    (timp (valoare ?t))
-    ?f <- (ag_bel (bel_type fluent) (bel_pname no-left-turn-zone) (bel_pval yes))
-    (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval area_limit))
-    (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval area_limit))
-    (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval intersection_end))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-left-turn-zone-end we crossed an intersection" crlf))
-    (retract ?f)
-)
+; (defrule AGENT::speed-allowed-70
+;     (timp (valoare ?t))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 70))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>vad indicator " viteza_maxima_admisa " 70" crlf))
+;     (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 70)))
+;     ;(facts AGENT)
+; )
 
-;-----Validate intention of left-turn: check if there is any restriction ----------
-(defrule AGENT::validate-left-turn
+; (defrule AGENT::speed-allowed-50
+;     (timp (valoare ?t))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
+;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 50))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>vad indicator " viteza_maxima_admisa " 50" crlf))
+;     (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 50)))
+;     ;(facts AGENT)
+; )
+
+(defrule AGENT::sign-speed-limit
     (declare (salience -10))
-    ?f <- (ag_bel (bel_type moment) (bel_pname left-turn-maneuver) (bel_pval prohibited))
-    (not (ag_bel (bel_type fluent) (bel_pname no-left-turn-zone) (bel_pval yes)))
-    ;(not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes) (bel_pdir left)))
-    ;; TODO: manage direction
-     (not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes)))
-    (not (ag_bel (bel_type moment) (bel_pname continuous-line-marking) (bel_pval yes)))
-;roundabout
+    (timp (valoare ?t))
+    ?f <- (ag_bel
+            (bel_type moment) ; indicator vazut
+            (bel_pobj ?)
+            (bel_pname viteza_maxima_admisa)
+            (bel_pval ?limita_viteza))
+    ?s <- (ag_bel ; belief limita viteza
+            (bel_type moment)
+            (bel_pname speed_limit)
+            (bel_pval ?)
+    )
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>validate-left-turn NU->DA (nu avem restrictii) " crlf))
+    (modify ?s (bel_pval ?limita_viteza))
+    ; (assert (ag_bel
+    ;             (bel_type moment)
+    ;             ;(bel_timeslice 0)
+    ;             (bel_pname speed)
+    ;             (bel_pval 100)))
+    (if (eq ?*ag-in-debug* TRUE) then (printout t " interzis peste " ?limita_viteza  crlf))
     (retract ?f)
-    (assert (ag_bel (bel_type moment) (bel_pname left-turn-maneuver) (bel_pval allowed)))
     ;(facts AGENT)
+    ; (not (ag_bel 
+    ;         (bel_type fluent)
+    ;         ;(bel_pobj indicator_restrictie_viteza)
+    ;         (bel_pname speed_limit)
+    ;         (bel_pval 70)))
+    ; (not (ag_bel 
+    ;         (bel_type fluent)
+    ;         ;(bel_pobj indicator_restrictie_viteza)
+    ;         (bel_pname speed_limit)
+    ;         (bel_pval 90)))
+    ; (not (ag_bel 
+    ;         (bel_type fluent)
+    ;         ;(bel_pobj indicator_restrictie_viteza)
+    ;         (bel_pname speed_limit)
+    ;         (bel_pval 100)))
+    ; (not (ag_bel 
+    ;         (bel_type fluent)
+    ;         ;(bel_pobj indicator_restrictie_viteza)
+    ;         (bel_pname speed_limit)
+    ;         (bel_pval 130)))
+    ; (not (ag_bel 
+    ;         (bel_type moment) 
+    ;         ;(bel_timeslice 0)
+    ;         (bel_pname pedestrian-crossing-marking) 
+    ;         (bel_pval yes)))
+    ; (not (ag_bel 
+    ;         (bel_type moment) 
+    ;         ;(bel_timeslice 0)
+    ;         (bel_pname continuous-line-marking) 
+    ;         (bel_pval yes)))      
+
+    ; (facts AGENT)
 )
-
-
-
 ;---------Delete auxiliary facts which are no longer needed ----------
 ;
 ; Programmner's task
