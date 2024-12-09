@@ -1,0 +1,13 @@
+(ag_percept
+	(percept_pobj senzor)
+	(percept_pname stare_vreme)
+	(percept_pval ploaie_torentiala)
+)
+
+(ag_percept
+	(percept_pobj senzor)
+	(percept_pname vizibilitate)
+	(percept_pval redusa)
+)
+
+

@@ -1,365 +1,144 @@
-;
-;-------Auxiliary facts ---------------------------------------
-;
-
-(defrule AGENT::initCycle-overtaking
-    (declare (salience 89))
-    (timp (valoare ?)) ;make sure it fires each cycle
+(defrule AGENT::react-to-train-crossing
+    (timp (valoare ?t))
+    (ag_percept (percept_pname road_sign) (percept_pval trecere_cale_ferata_fara_bariera))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>initCycle-overtaking prohibited by default " crlf))
-    (assert (ag_bel (bel_type moment) (bel_pname overtaking-maneuver) (bel_pval prohibited))) ;by default, we assume overtaking NOT valid
-    ;(facts AGENT)
-)
-
-; (defrule AGENT::initCycle-right-turn
-;     (declare (salience 89))
-;     (timp (valoare ?)) ;make sure it fires each cycle
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>initCycle-right-turn prohibited by default " crlf))
-;     (assert (ag_bel (bel_type moment) (bel_pname right-turn-maneuver) (bel_pval prohibited))) ;by default, we assume overtaking NOT valid
-;     ;(facts AGENT)
-; )
-
-; (defrule AGENT::initCycle-left-turns
-;     (declare (salience 89))
-;     (timp (valoare ?)) ;make sure it fires each cycle
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>initCycle-left-turn prohibited by default " crlf))
-;     (assert (ag_bel (bel_type moment)  (bel_pname left-turn-maneuver) (bel_pval prohibited))) ;by default, we assume overtaking NOT valid
-;     ;(facts AGENT)
-; )
-
-(defrule AGENT::initCycle-viteza
-    (declare (salience 89))
-    (timp (valoare ?))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>initCycle-viteza is 50 by default" crlf))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 50)))
+    (printout t "CAUTION: Train crossing ahead without a barrier. Slow down and check for trains. Speed limit is 50 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 50)))
+    (printout t "Current speed limit: 50 km/h" crlf)
     (facts AGENT)
 )
 
-;;----------------------------------
-;;
-;;    Overtaking
-;;
-;;----------------------------------
-
-;
-;-------Check percepts to update restriction fluents-----------
-;
-;---Case #1: a fluent with 1 sign to turn it on and 2 signs which might turn it off
-
-;--- Sign overtaking prohibited
-(defrule AGENT::rdi
+(defrule AGENT::react-to-pedestrian
     (timp (valoare ?t))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval depasire_interzisa))
+    (ag_percept (percept_pname pedestrian) (percept_pval on_crossing))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>rdi vad indicator " depasire_interzisa crlf))
-    (assert (ag_bel (bel_type fluent) (bel_pname no-overtaking-zone) (bel_pval yes)))
-    ;(facts AGENT)
+    (printout t "STOP: Pedestrian on the crossing. Do not proceed until the way is clear. Speed limit is 0 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 0)))
+    (printout t "Current speed limit: 0 km/h" crlf)
+    (facts AGENT)
 )
 
-(defrule AGENT::frdi
+(defrule AGENT::highway-entry
     (timp (valoare ?t))
-    ?f <- (ag_bel (bel_type fluent) (bel_pname no-overtaking-zone) (bel_pval yes))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval final_depasire_interzisa))
+    (ag_percept (percept_pname road_sign) (percept_pval intrare_autostrada))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>frdi vad indicator " final_depasire_interzisa crlf))
-    (retract ?f)
-    ;(facts AGENT)
+    (printout t "Entered highway. Speed limit is 130 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 130)))
+    (printout t "Current speed limit: 130 km/h" crlf)
+    (facts AGENT)
 )
 
-(defrule AGENT::far
+(defrule AGENT::slow-vehicle-detected
     (timp (valoare ?t))
-    ?f <- (ag_bel (bel_type fluent) (bel_pname no-overtaking-zone) (bel_pval yes))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval  incetarea_tuturor_restrictiilor))
+    (ag_percept (percept_pname vehicle) (percept_pval slow) (percept_pdir ahead))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>far vad indicator " tip incetarea_tuturor_restrictiilor crlf))
-    (retract ?f)
-    ;(facts AGENT)
+    (printout t "Slow vehicle ahead in the right lane. Speed limit remains unchanged." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 130)))
+    (printout t "Current speed limit: 130 km/h" crlf)
+    (facts AGENT)
 )
 
-;----Case #2: an non-fluent belief: it depends on the current percepts only
-;--- Marcaj trecere pietoni perceput in momentul curent
-(defrule AGENT::rmtp
+(defrule AGENT::overtake-vehicle
     (timp (valoare ?t))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname isa) (bel_pval road_surface_marking))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval  trecere_pietoni))
+    (ag_percept (percept_pname maneuver) (percept_pval overtaking))
+    (ag_percept (percept_pname lane) (percept_pval left))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>rmtp vad marcaj " trecere_pietoni crlf))
-    (assert (ag_bel (bel_type moment) (bel_pname pedestrian-crossing-marking) (bel_pval yes)))
+    (printout t "Overtaking vehicle using the left lane. Speed limit remains unchanged." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 130)))
+    (printout t "Current speed limit: 130 km/h" crlf)
+    (facts AGENT)
 )
 
-;--- Marcaj linie continua perceput in momentul curent
-(defrule AGENT::rmlc
+(defrule AGENT::heavy-rain
     (timp (valoare ?t))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname isa) (bel_pval road_surface_marking))
-    (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval linie_cont))
+    (ag_percept (percept_pname weather) (percept_pval heavy_rain))
+    (ag_percept (percept_pname visibility) (percept_pval reduced))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>rmlc vad marcaj " linie_cont crlf))
-    (assert (ag_bel (bel_type moment) (bel_pname continuous-line-marking) (bel_pval yes)))
-    ;(facts AGENT)
+    (printout t "Heavy rain detected. Speed limit is 50 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 50)))
+    (printout t "Current speed limit: 50 km/h" crlf)
+    (facts AGENT)
 )
 
-
-;-- TODO: daca am Semn trecere de pietoni (nu marcaj, ci semn!) - switch fluent dupa o anumita distanta parcursa
-;-- de abstractizat terminarea parcurgerii distantei
-
-;-- TODO: marcaj linie continua pe care l-as incalca la repliere - tratare perceptii curente+viitoare
-;-- de integrat si in regula validate-overtaking
-
-;-----Validate intention of overtaking: check if there is any restriction ----------
-(defrule AGENT::validate-overtaking
-    (declare (salience -10))
-    ?f <- (ag_bel (bel_type moment) (bel_pname overtaking-maneuver) (bel_pval prohibited))
-    (not (ag_bel (bel_type fluent) (bel_pname no-overtaking-zone) (bel_pval yes)))
-    (not (ag_bel (bel_type moment) (bel_pname pedestrian-crossing-marking) (bel_pval yes)))
-    (not (ag_bel (bel_type moment) (bel_pname continuous-line-marking) (bel_pval yes)))
-; TODO: De restul cazurilor, listate mai jos, trebuie sa te ocupi
-;    (not (crt-intersectie)) TODO: TOATE?!?!
-;    (not (crt-rampa))
-;    (not (crt-curba))
-;    (not (crt-vizibilitate redusa))
-;    (not (crt-pasaj))
-;    (not (crt-pod))
-;    (not (crt-sub pod))
-;    (not (crt-tunel))
-;    (not (crt-cale ferata curenta))
-;    (not (crt-urmeaza cale ferata))
-;    (not (crt-statie))
-;    (not (crt-marcaj dublu continuu))
-;    (not (crt-posibila coliziune))
-;    (not (crt-coloana))
-;    (not (crt-coloana_oficiala))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>validate-overtaking NU->DA (nu avem restrictii) " crlf))
-    (retract ?f)
-    (assert (ag_bel (bel_type moment) (bel_pname overtaking-maneuver) (bel_pval allowed)))
-    ;(facts AGENT)
-)
-
-
-;;----------------------------------
-;;
-;;    Right turn
-;;
-;;----------------------------------
-
-;--- Sign forbidding right turn or forcing either go ahead or left turn
-; (defrule AGENT::r-no-right-turn-sign
-;     (timp (valoare ?t))
-;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
-;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval ?v&interzis_viraj_dreapta | obligatoriu_inainte | obligatoriu_stanga | obligatoriu_inainte_stanga))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-right-turn-sign" crlf))
-;     (assert (ag_bel (bel_type fluent) (bel_pname no-right-turn-zone) (bel_pval yes)))
-;     ;(facts AGENT)
-; )
-
-; (defrule AGENT::r-no-right-turn-zone-end
-;     (timp (valoare ?t))
-;     ?f <- (ag_bel (bel_type fluent) (bel_pname no-right-turn-zone) (bel_pval yes))
-;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval area_limit))
-;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval intersection_end))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-right-turn-zone-end we crossed an intersection" crlf))
-;     (retract ?f)
-; )
-
-;  ;--- Sign forbidding access on a street
-; (defrule AGENT::r-no-access
-;     (timp (valoare ?t))
-;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
-;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval ?v& accesul_interzis | circulatia_interzisa_in_ambele_sensuri))
-;     ;;;(ag_bel (bel_pobj ?ps) (bel_pname direction) (bel_pval ?pd& right | left))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-access" crlf))
-;     (assert (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes)))
-;     ;(facts AGENT)
-; )
-
-; ;-----Validate intention of right-turn: check if there is any restriction ----------
-; (defrule AGENT::validate-right-turn
-;     (declare (salience -10))
-;     ?f <- (ag_bel (bel_type moment) (bel_pname right-turn-maneuver) (bel_pval prohibited))
-;     (not (ag_bel (bel_type fluent) (bel_pname no-right-turn-zone) (bel_pval yes)))
-;     ;(not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes) (bel_pdir right)))
-;     ;; TODO: manage direction
-;     (not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes)))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>validate-right-turn NU->DA (nu avem restrictii) " crlf))
-;     (retract ?f)
-;     (assert (ag_bel (bel_type moment) (bel_pname right-turn-maneuver) (bel_pval allowed)))
-;     ;(facts AGENT)
-; )
-
-
-; ;;----------------------------------
-; ;;
-; ;;    Left turn
-; ;;
-; ;;----------------------------------
-
-; ;--Sign forbidding access on a street to the left dealt by r-no-access rule
-; ;--continuous line presence checked by rmlc rule
-; ;--TODO: roundabout
-
-; ;--- Sign forbidding left turn or forcing either go ahead or right turn
-; (defrule AGENT::r-no-left-turn-sign
-;     (timp (valoare ?t))
-;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval road_sign))
-;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval ?v&interzis_viraj_stanga | obligatoriu_inainte | obligatoriu_dreapta | obligatoriu_inainte_dreapta | intersectie_cu_sens_giratoriu))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-left-turn-sign" ?v crlf))
-;     (assert (ag_bel (bel_type fluent) (bel_pname no-left-turn-zone) (bel_pval yes)))
-;     ;(facts AGENT)
-; )
-
-; (defrule AGENT::r-no-left-turn-zone-end
-;     (timp (valoare ?t))
-;     ?f <- (ag_bel (bel_type fluent) (bel_pname no-left-turn-zone) (bel_pval yes))
-;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval area_limit))
-;     (ag_bel (bel_pobj ?ps) (bel_pname isa) (bel_pval area_limit))
-;     (ag_bel (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval intersection_end))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>r-no-left-turn-zone-end we crossed an intersection" crlf))
-;     (retract ?f)
-; )
-
-; ;-----Validate intention of left-turn: check if there is any restriction ----------
-; (defrule AGENT::validate-left-turn
-;     (declare (salience -10))
-;     ?f <- (ag_bel (bel_type moment) (bel_pname left-turn-maneuver) (bel_pval prohibited))
-;     (not (ag_bel (bel_type fluent) (bel_pname no-left-turn-zone) (bel_pval yes)))
-;     ;(not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes) (bel_pdir left)))
-;     ;; TODO: manage direction
-;      (not (ag_bel (bel_type moment) (bel_pname no-access) (bel_pval yes)))
-;     (not (ag_bel (bel_type moment) (bel_pname continuous-line-marking) (bel_pval yes)))
-; ;roundabout
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>validate-left-turn NU->DA (nu avem restrictii) " crlf))
-;     (retract ?f)
-;     (assert (ag_bel (bel_type moment) (bel_pname left-turn-maneuver) (bel_pval allowed)))
-;     ;(facts AGENT)
-; )
-
-
-;;----------------------------------
-;;
-;;    Situatie 1
-;;    European 100 - Localitate 50 - European 100
-;;
-;;----------------------------------
-; (defrule AGENT::speed-allowed-130
-;     (timp (valoare ?t))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 130))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D> vad indicator " viteza_maxima_admisa " 130" crlf))
-;     (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 130)))
-;     ;(facts AGENT)
-; )
-
-; (defrule AGENT::speed-allowed-100
-;     (timp (valoare ?t))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 100))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>vad indicator " viteza_maxima_admisa " 100" crlf))
-;     (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 100)))
-;     ;(facts AGENT)
-; )
-
-; (defrule AGENT::speed-allowed-90
-;     (timp (valoare ?t))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 90))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>vad indicator " viteza_maxima_admisa " 90" crlf))
-;     (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 90)))
-;     ;(facts AGENT)
-; )
-
-; (defrule AGENT::speed-allowed-70
-;     (timp (valoare ?t))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 70))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>vad indicator " viteza_maxima_admisa " 70" crlf))
-;     (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 70)))
-;     ;(facts AGENT)
-; )
-
-; (defrule AGENT::speed-allowed-50
-;     (timp (valoare ?t))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname viteza_maxima_admisa) (bel_pval yes))
-;     (ag_bel (bel_type moment) (bel_pobj ?ps) (bel_pname semnificatie) (bel_pval 50))
-; =>
-;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D>vad indicator " viteza_maxima_admisa " 50" crlf))
-;     (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 50)))
-;     ;(facts AGENT)
-; )
-
-(defrule AGENT::sign-speed-limit
-    (declare (salience -10))
+(defrule AGENT::accident-warning
     (timp (valoare ?t))
-    ?f <- (ag_bel
-            (bel_type moment) ; indicator vazut
-            (bel_pobj ?)
-            (bel_pname viteza_maxima_admisa)
-            (bel_pval ?limita_viteza))
-    ?s <- (ag_bel ; belief limita viteza
-            (bel_type moment)
-            (bel_pname speed_limit)
-            (bel_pval ?)
-    )
+    (ag_percept (percept_pname road_sign) (percept_pval accident_ahead))
+    (ag_percept (percept_pname lane) (percept_pval closed))
 =>
-    (modify ?s (bel_pval ?limita_viteza))
-    ; (assert (ag_bel
-    ;             (bel_type moment)
-    ;             ;(bel_timeslice 0)
-    ;             (bel_pname speed)
-    ;             (bel_pval 100)))
-    (if (eq ?*ag-in-debug* TRUE) then (printout t " interzis peste " ?limita_viteza  crlf))
-    (retract ?f)
-    ;(facts AGENT)
-    ; (not (ag_bel 
-    ;         (bel_type fluent)
-    ;         ;(bel_pobj indicator_restrictie_viteza)
-    ;         (bel_pname speed_limit)
-    ;         (bel_pval 70)))
-    ; (not (ag_bel 
-    ;         (bel_type fluent)
-    ;         ;(bel_pobj indicator_restrictie_viteza)
-    ;         (bel_pname speed_limit)
-    ;         (bel_pval 90)))
-    ; (not (ag_bel 
-    ;         (bel_type fluent)
-    ;         ;(bel_pobj indicator_restrictie_viteza)
-    ;         (bel_pname speed_limit)
-    ;         (bel_pval 100)))
-    ; (not (ag_bel 
-    ;         (bel_type fluent)
-    ;         ;(bel_pobj indicator_restrictie_viteza)
-    ;         (bel_pname speed_limit)
-    ;         (bel_pval 130)))
-    ; (not (ag_bel 
-    ;         (bel_type moment) 
-    ;         ;(bel_timeslice 0)
-    ;         (bel_pname pedestrian-crossing-marking) 
-    ;         (bel_pval yes)))
-    ; (not (ag_bel 
-    ;         (bel_type moment) 
-    ;         ;(bel_timeslice 0)
-    ;         (bel_pname continuous-line-marking) 
-    ;         (bel_pval yes)))      
-
-    ; (facts AGENT)
+    (printout t "Accident ahead. Speed limit is 30 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 30)))
+    (printout t "Current speed limit: 30 km/h" crlf)
+    (facts AGENT)
 )
-;---------Delete auxiliary facts which are no longer needed ----------
-;
-; Programmner's task
-;
+
+(defrule AGENT::localitate
+    (timp (valoare ?))
+    (ag_percept (percept_pobj semn) (percept_pname indicator) (percept_pval localitate_in))
+=>
+    (printout t "Entering locality. Speed limit is 50 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 50)))
+    (printout t "Current speed limit: 50 km/h" crlf)
+    (facts AGENT)
+)
+
+(defrule AGENT::clear-weather
+    (timp (valoare ?))
+    (ag_percept (percept_pobj semn) (percept_pname indicator) (percept_pval localitate_out))
+    (ag_percept (percept_pobj senzor) (percept_pname stare_vreme) (percept_pval senin))
+=>
+    (printout t "Clear weather outside locality. Speed limit is 90 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 90)))
+    (printout t "Current speed limit: 90 km/h" crlf)
+    (facts AGENT)
+)
+
+(defrule AGENT::school-zone
+    (timp (valoare ?))
+    (ag_percept (percept_pobj semn) (percept_pname indicator) (percept_pval scoala))
+=>
+    (printout t "School zone. Speed limit is 30 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 30)))
+    (printout t "Current speed limit: 30 km/h" crlf)
+    (facts AGENT)
+)
+
+(defrule AGENT::pedestrian-crossing
+    (timp (valoare ?))
+    (ag_percept (percept_pobj semn) (percept_pname indicator) (percept_pval trecere_pietoni))
+    (ag_percept (percept_pobj om) (percept_pname pe_trecere) (percept_pval yes))
+=>
+    (printout t "Pedestrian on the crossing. Speed limit is 30 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 30)))
+    (printout t "Current speed limit: 30 km/h" crlf)
+    (facts AGENT)
+)
+
+(defrule AGENT::red-traffic-light
+    (timp (valoare ?))
+    (ag_percept (percept_pobj semn) (percept_pname semafor) (percept_pval rosu))
+=>
+    (printout t "Red traffic light. Speed limit is 0 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 0)))
+    (printout t "Current speed limit: 0 km/h" crlf)
+    (facts AGENT)
+)
+
+(defrule AGENT::railroad-crossing-no-barrier
+    (timp (valoare ?))
+    (ag_percept (percept_pobj trecere_tren) (percept_pname bariera) (percept_pval no))
+=>
+    (printout t "Railroad crossing without barrier. Speed limit is 50 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 50)))
+    (printout t "Current speed limit: 50 km/h" crlf)
+    (facts AGENT)
+)
+
+(defrule AGENT::dangerous-curve
+    (timp (valoare ?))
+    (ag_percept (percept_pobj road) (percept_pname curba) (percept_pval periculoasa))
+=>
+    (printout t "Dangerous curve. Speed limit is 40 km/h." crlf)
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 40)))
+    (printout t "Current speed limit: 40 km/h" crlf)
+    (facts AGENT)
+)

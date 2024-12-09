@@ -1,7 +1,7 @@
 (ag_percept
 	(percept_pobj semn)
 	(percept_pname indicator)
-	(percept_pval localitate_in)
+	(percept_pval localitate_out)
 )
 
 (ag_percept
@@ -9,5 +9,3 @@
 	(percept_pname stare_vreme)
 	(percept_pval senin)  
 )
-
-
