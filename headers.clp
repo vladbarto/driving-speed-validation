@@ -8,11 +8,11 @@
 
 (deftemplate MAIN::tic)
 
-(defglobal ?*main-in-debug* = TRUE)
-(defglobal ?*ag-tic-in-debug* = TRUE)
+(defglobal ?*main-in-debug* = FALSE)
+(defglobal ?*ag-tic-in-debug* = FALSE)
 
 
-(defglobal ?*totalNrRules* = 163) ; trial and error
+(defglobal ?*totalNrRules* = 133) ; trial and error
 
 ;
 ;----------Modul: PERCEPT-MANAGER-----------
@@ -25,10 +25,10 @@
 )
 
 
-(defglobal ?*sim-in-debug* = TRUE)
-(defglobal ?*percepts-in-debug* = TRUE)
-(defglobal ?*perceptsDir* = "./Teste/Test_Afara_B/")
-
+(defglobal ?*sim-in-debug* = FALSE)
+(defglobal ?*percepts-in-debug* = FALSE)
+; (defglobal ?*perceptsDir* = "./Teste/Test_Afara_B/")
+(defglobal ?*perceptsDir* = "/Users/vladbarto/Documents/FACULTATE/AN4/SEM1/SE/PROIECT_VITEZA/Teste/Test_Afara_B/")
 
 (deftemplate PERCEPT-MANAGER::timp (slot valoare))
 
@@ -46,10 +46,10 @@
     (import PERCEPT-MANAGER deftemplate ag_percept)
 )
 
-(defglobal ?*ag-in-debug* = TRUE)
-(defglobal ?*ag-percepts-in-debug* = TRUE)
+(defglobal ?*ag-in-debug* = FALSE)
+(defglobal ?*ag-percepts-in-debug* = FALSE)
 
-(defglobal ?*ag-measure-time* = FALSE)
+(defglobal ?*ag-measure-time* = TRUE)
 
 (deftemplate ag_bel
     (slot bel_type) ; fluent|moment

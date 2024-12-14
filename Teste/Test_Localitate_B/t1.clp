@@ -7,8 +7,8 @@
 )
 
 (ag_percept
-    (percept_pname senzor)
-    (percept_pval stare_vreme)
-    (percept_pobj senin)
+    (percept_pobj senzor)
+    (percept_pname stare_vreme)
+    (percept_pval senin)
 )
 
