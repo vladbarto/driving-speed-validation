@@ -1,3 +1,6 @@
+; t7
+; speed_limit 90
+
 (ag_percept
 	(percept_pobj semn)
 	(percept_pname indicator)

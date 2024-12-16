@@ -1,3 +1,6 @@
+; t2
+; speed_limit 30
+
 (ag_percept
 	(percept_pobj senzor)
 	(percept_pname stare_vreme)

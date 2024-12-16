@@ -1,4 +1,5 @@
 ; t7: Exit highway – speed limit removed.
+; speed_limit 90
 
 (ag_percept
     (percept_pobj semn)
@@ -8,6 +9,6 @@
 
 (ag_percept
     (percept_pobj semn)
-    (percept_pname limita_viteza)
-    (percept_pval no)
+    (percept_pname tip_drum)
+    (percept_pval national)
 )

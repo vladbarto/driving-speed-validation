@@ -1,3 +1,6 @@
+; t4
+; speed_limit 0
+
 (ag_percept
 	(percept_pobj semn)
 	(percept_pname indicator)

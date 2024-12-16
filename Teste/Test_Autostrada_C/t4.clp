@@ -1,4 +1,5 @@
 ; t4: Rain starts – suggested speed limit (80 km/h).
+; speed_limit 130
 
 (ag_percept
     (percept_pobj senzor)

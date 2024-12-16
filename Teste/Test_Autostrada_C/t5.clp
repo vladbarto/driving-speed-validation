@@ -1,4 +1,5 @@
 ; t5: Heavy rain – mandatory speed limit (50 km/h).
+; speed_limit 50
 
 (ag_percept
     (percept_pobj senzor)

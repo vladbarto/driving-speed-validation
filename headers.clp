@@ -12,7 +12,7 @@
 (defglobal ?*ag-tic-in-debug* = FALSE)
 
 
-(defglobal ?*totalNrRules* = 80) 
+(defglobal ?*totalNrRules* = 120) 
 
 ;
 ;----------Modul: PERCEPT-MANAGER-----------
@@ -45,8 +45,8 @@
     (import PERCEPT-MANAGER deftemplate ag_percept)
 )
 
-(defglobal ?*ag-in-debug* = TRUE)
-(defglobal ?*ag-percepts-in-debug* = TRUE)
+(defglobal ?*ag-in-debug* = FALSE)
+(defglobal ?*ag-percepts-in-debug* = FALSE)
 
 (defglobal ?*ag-measure-time* = FALSE)
 
