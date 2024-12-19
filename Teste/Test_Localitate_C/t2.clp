@@ -2,15 +2,15 @@
 ; speed_limit 30
 
 (ag_percept
-	(percept_pobj senzor)
-	(percept_pname stare_vreme)
-	(percept_pval ploaie_torentiala)
+	(percept_pobj situatie2)
+	(percept_pname is_a)
+	(percept_pval senzor)
 )
 
 (ag_percept
-	(percept_pobj senzor)
-	(percept_pname vizibilitate)
-	(percept_pval redusa)
+	(percept_pobj situatie2)
+	(percept_pname semnificatie)
+	(percept_pval vizibilitate_redusa)
 )
 
 

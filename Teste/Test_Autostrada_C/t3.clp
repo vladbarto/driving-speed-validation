@@ -2,13 +2,19 @@
 ; speed_limit 130
 
 (ag_percept
-    (percept_pobj semn)
-    (percept_pname lucrari_drum)
-    (percept_pval no)
+	(percept_pobj situatie2)
+	(percept_pname is_a)
+	(percept_pval indicator)
 )
 
 (ag_percept
-    (percept_pobj semn)
-    (percept_pname limita_viteza)
-    (percept_pval 130)
+	(percept_pobj situatie2)
+	(percept_pname semnificatie)
+	(percept_pval sfarsit_restrictie_viteza)
+)
+
+(ag_percept
+	(percept_pobj situatie2)
+	(percept_pname valoare)
+	(percept_pval 60)
 )

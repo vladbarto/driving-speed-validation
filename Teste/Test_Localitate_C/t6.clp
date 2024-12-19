@@ -2,25 +2,13 @@
 ; speed_limit 30
 
 (ag_percept
-	(percept_pobj semn)
-	(percept_pname indicator)
-	(percept_pval trecere_pietoni)
+    (percept_pobj situatie6)
+    (percept_pname is_a)
+    (percept_pval semafor)
 )
 
 (ag_percept
-	(percept_pobj semn)
-	(percept_pname semafor)
-	(percept_pval verde)
-)
-
-(ag_percept
-	(percept_pobj senzor)
-	(percept_pname stare_vreme)
-	(percept_pval ploaie_torentiala)
-)
-
-(ag_percept
-	(percept_pobj senzor)
-	(percept_pname vizibilitate)
-	(percept_pval redusa)
+    (percept_pobj situatie6)
+    (percept_pname culoare)
+    (percept_pval verde) 
 )

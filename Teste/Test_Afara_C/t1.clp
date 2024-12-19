@@ -2,13 +2,12 @@
 ; speed_limit 90
 
 (ag_percept
-	(percept_pobj semn_1)
-	(percept_pname indicator)
-	(percept_pval localitate_out)
+    (percept_pobj locatie)
+    (percept_pname is_a)
+    (percept_pval drum_national)
 )
-
-(ag_percept
-	(percept_pobj senzor)
-	(percept_pname stare_vreme)
-	(percept_pval senin)  
-)
+; (ag_percept
+; 	(percept_pobj senzor)
+; 	(percept_pname stare_vreme)
+; 	(percept_pval senin)  
+; )

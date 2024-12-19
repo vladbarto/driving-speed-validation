@@ -1,3 +1,6 @@
+;
+;-------Auxiliary facts ---------------------------------------
+;
 
 (defrule AGENT::initCycle-exista-speed_limit-moment "presupun ca la final de tot nu exista speed_limit MOMENT"
     (declare (salience 90))
@@ -20,371 +23,435 @@
 (defrule AGENT::initCycle-viteza-drum-european
     (declare (salience 89))
     (timp (valoare 1))
-    (ag_bel (bel_type moment) (bel_pname is_a) (bel_pval drum_european|drum_national|drum_judetean|drum_comunal))
+    (ag_bel (bel_type moment) (bel_pname is_a) (bel_pval drum_european))
 =>
     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <DEFAULT SPEED> 100 by default as fluent bel" crlf))
     (assert (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 100)))
     (facts AGENT)
 )
-(defrule AGENT::iesire-localitate-senin
-    (declare (salience 30))
+
+(defrule AGENT::initCycle-viteza-alte-drumuri
+    (declare (salience 89))
+    (timp (valoare 1))
+    (ag_bel (bel_type moment) (bel_pname is_a) (bel_pval drum_national|drum_judetean|drum_comunal))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <DEFAULT SPEED> 90 by default as fluent bel" crlf))
+    (assert (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 90)))
+    (facts AGENT)
+)
+;;----------------------------------
+;;
+;;    Semafor
+;;
+;;----------------------------------
+;--- Semafor culoare galbena sau rosie
+(defrule AGENT::semafor-galben-rosu-no-speed-limit
+    (declare (salience 20))
     (timp (valoare ?t))
-    (ag_bel (bel_type moment) (bel_pobj semn_1) (bel_pname indicator) (bel_pval localitate_out))
-    (ag_bel (bel_type moment) (bel_pobj senzor) (bel_pname stare_vreme) (bel_pval senin))
+    (ag_bel (bel_type moment) (bel_pobj ?sem) (bel_pname is_a) (bel_pval semafor))
+    (ag_bel (bel_type moment) (bel_pobj ?sem) (bel_pname culoare) (bel_pval ?color&galben|rosu))
     ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <IESIRE LOCALITATE> Regula aplicată pentru senin crlf"))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 90)))
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <SEMAFOR> Semafor perceput, culoare " ?color crlf))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))    
     (modify ?s (bel_pval TRUE))
+ )
+
+;  (defrule AGENT::semafor-galben-rosu-with-speed-limit  ;FIXME: adapt
+;     (declare (salience 20))
+;     (timp (valoare ?t))
+;     (ag_bel (bel_type moment) (bel_pobj ?sem) (bel_pname is_a) (bel_pval semafor))
+;     (ag_bel (bel_type moment) (bel_pobj ?sem) (bel_pname culoare) (bel_pval ?color&galben|rosu))
+;     ;?current_speed_limit <- (ag_bel (bel_pname speed_limit))
+;     ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
+; =>
+;     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D><SEMAFOR> Semafor perceput, culoare " ?color crlf))
+;     ;(retract ?current_speed_limit)
+;     (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))    
+;     (modify ?s (bel_pval TRUE))
+;  )
+
+
+(defrule AGENT::semafor-verde "don't modify speed limit, as it will be adapted by itself (see last command)"
+    (timp (valoare ?t))
+    (ag_bel (bel_type moment) (bel_pobj ?sem) (bel_pname is_a) (bel_pval semafor))
+    (ag_bel (bel_type moment) (bel_pobj ?sem) (bel_pname culoare) (bel_pval ?color&verde))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <SEMAFOR> semafor perceput, culoare " ?color crlf))
 )
 
-(defrule AGENT::trecere-tren-bariera-no
+
+;;----------------------------------
+;;
+;;    Politie
+;;
+;;----------------------------------
+(defrule AGENT::politie-in-misiune
+    (declare (salience 20))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?pol) (bel_pname is_a) (bel_pval echipaj_de_politie))
+    (ag_bel (bel_type moment) (bel_pobj ?pol) (bel_pname semnale_acustice) (bel_pval active))
+    (ag_bel (bel_type moment) (bel_pobj ?pol) (bel_pname semnale_luminoase) (bel_pval rosu_si_albastru))
+    ;TODO:? add pozitia relativa a echipajului fata de masina sau get rid of it
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <POLITIE> echipaj in misiune perceput" crlf))
+    (modify ?s (bel_type TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))    
+)
+
+;;----------------------------------
+;;
+;;    Trecere de pietoni
+;;
+;;----------------------------------
+(defrule AGENT::trecere-de-pietoni-fara-pietoni-in-localitate
+    (declare (salience 20))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname is_a) (bel_pval trecere_de_pietoni))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname buza_trecerii) (bel_pval all_clear))
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <CROSSROAD> trecere de pietoni fara pietoni in localitate perceputa" crlf))
+    (modify ?s (bel_type TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 30)))    
+)
+
+(defrule AGENT::trecere-de-pietoni-cu-pietoni
+    (declare (salience 20))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname is_a) (bel_pval trecere_de_pietoni))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname buza_trecerii) (bel_pval pietoni_approaching))
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <CROSSROAD> trecere de pietoni fara pietoni in afara perceputa" crlf))
+    (modify ?s (bel_type TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))    
+)
+
+;;----------------------------------
+;;
+;;    Indicator generic limita de viteza
+;;
+;;----------------------------------
+(defrule AGENT::indicator-start
+    (declare (salience 20))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval indicator))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval impunere_restrictie_viteza))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname valoare) (bel_pval ?speed))
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval ?val))
+    (test (eq ?val FALSE))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <INDICATOR><"?speed"> Limita viteza " ?speed " perceputa" crlf))
+    (modify ?s (bel_pval TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval ?speed)))
+    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))
+    (assert (trigger-computation-rule ?speed))
+)
+
+(defrule AGENT::indicator-end
+    (declare (salience 20))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval indicator))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval sfarsit_restrictie_viteza))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname valoare) (bel_pval ?speed))
+    ; ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+    ?r <- (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <INDICATOR><"?speed"> Sfarsit Limita viteza " ?speed " perceputa" crlf))
+    ; (modify ?s (bel_pval FALSE)) ; implicitly FALSE by initCycle routine
+    (retract ?r)
+)
+
+;;----------------------------------
+;;
+;;    Indicatorare aditionale pentru cele cu limita de viteza
+;;
+;;----------------------------------
+(defrule AGENT::indicator-aditional-conditii-de-vreme "regula care vrea sa impuna o limita de viteza daca afara vremea are o stare anume"
+    (declare (salience 19))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indicator_aditional) (bel_pname is_a) (bel_pval indicator_aditional))
+    (ag_bel (bel_type moment) (bel_pobj ?indicator_aditional) (bel_pname semnificatie) (bel_pval aplicabil_in_caz_de))
+    (ag_bel (bel_type moment) (bel_pobj ?indicator_aditional) (bel_pname valoare) (bel_pval ?stare_indicator)) ; aka ploaie
+    (ag_bel (bel_type moment) (bel_pobj senzor) (bel_pname stare_vreme) (bel_pval ?stare_reala)) ; aka senin
+    (test (not (eq ?stare_reala ?stare_indicator)))
+    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval ?))
+    ?r <- (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?))
+    ?sle <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval ?setting)) ;sle = speed limit exists
+    (test (eq ?setting TRUE))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <INDICATOR ADITIONAL><Real "?stare_reala"> nu coincide cu <Indicator " ?stare_indicator "> perceput. Limita de viteza nu se aplica" crlf))
+    (retract ?s)
+    (retract ?r)
+    ;(modify ?sle (bel_pval FALSE))
+    ;(retract ?sle)
+    ;(assert (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE)))
+    ;(facts AGENT)
+)
+
+;;----------------------------------
+;;
+;;    Indicator curba deosebit de periculoasa
+;;
+;;----------------------------------
+(defrule AGENT::indicator-curba-deosebit-de-periculoasa-afara
     (declare (salience 25))
-    (timp (valoare ?t))
-    (ag_bel (bel_type moment) (bel_pobj trecere_tren) (bel_pname bariera) (bel_pval no))
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval indicator))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval atentionare))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname valoare) (bel_pval curba_deosebit_de_periculoasa))
+    (not (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50))) ; ne folosim de limita de viteza default ca sa ne dam seama ca nu suntem in localitate
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TRECERE TREN> Bariera ridicată, limită aplicată crlf"))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))
-    (modify ?s (bel_pval TRUE))
-)
-
-(defrule AGENT::curba-periculoasa-indicator-40
-    (declare (salience 20))
-    (timp (valoare ?t))
-    (ag_bel (bel_type moment) (bel_pobj road) (bel_pname curba) (bel_pval periculoasa))
-    (ag_bel (bel_type moment) (bel_pobj semn) (bel_pname indicator) (bel_pval 40))
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <CURBA PERICULOASA> Limită de viteză detectată crlf"))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 40)))
-    (modify ?s (bel_pval TRUE))
-)
-
-(defrule AGENT::trecere-pietoni
-    (declare (salience 20))
-    (timp (valoare ?t))
-    (ag_bel (bel_type moment) (bel_pobj semn) (bel_pname trecere_pietoni) (bel_pval yes))
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TRECERE PIETONI> Regula aplicată pentru trecere pietoni crlf"))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 90)))
-    (modify ?s (bel_pval TRUE))
-)
-
-(defrule AGENT::om-pe-trecere
-    (declare (salience 20))
-    (timp (valoare ?t))
-    (ag_bel (bel_type moment) (bel_pobj om) (bel_pname pe_trecere) (bel_pval yes))
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <OM PE TRECERE> Limită de viteză redusă crlf"))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))
-    (modify ?s (bel_pval TRUE))
-)
-
-(defrule AGENT::animal-pe-trecere
-    (declare (salience 20))
-    (timp (valoare ?t))
-    (ag_bel (bel_type moment) (bel_pobj caine) (bel_pname pe_trecere) (bel_pval yes))
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <ANIMAL PE TRECERE> Limită de viteză redusă crlf"))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))
-    (modify ?s (bel_pval TRUE))
-)
-
-
-;;autostrada
-
-;;----------------------------------
-;;
-;;    T1: Enter Highway
-;;    Speed Limit: 130 km/h
-;;----------------------------------
-(defrule AGENT::scenario-enter-highway
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname autostrada)
-        (percept_pval yes)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TIME 1> Entering Highway - Speed Limit 130 km/h" crlf))
-    (modify ?s (bel_pval TRUE))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 130)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 130)))
-)
-
-;;----------------------------------
-;;
-;;    T2: Road Work Speed Limit
-;;    Speed Limit: 60 km/h
-;;----------------------------------
-(defrule AGENT::scenario-road-work-speed-limit
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname lucrari_drum)
-        (percept_pval yes)
-    )
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname limita_viteza)
-        (percept_pval 60)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TIME 2> Road Work - Speed Limit 60 km/h" crlf))
-    (modify ?s (bel_pval TRUE))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 60)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 60)))
-)
-
-;;----------------------------------
-;;
-;;    T3: Resume Normal Speed after Road Work
-;;    Speed Limit: 130 km/h
-;;----------------------------------
-(defrule AGENT::scenario-resume-normal-speed
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname lucrari_drum)
-        (percept_pval no)
-    )
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname limita_viteza)
-        (percept_pval 130)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TIME 3> Road Work Ended - Resuming Normal Speed 130 km/h" crlf))
-    (modify ?s (bel_pval TRUE))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 130)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 130)))
-)
-
-;;----------------------------------
-;;
-;;    T4: Light Rain
-;;    Speed Suggestion: 80 km/h
-;;----------------------------------
-(defrule AGENT::scenario-light-rain
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj senzor)
-        (percept_pname vreme)
-        (percept_pval ploaie)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TIME 4> Light Rain - Suggested Speed 80 km/h" crlf))
-    (modify ?s (bel_pval TRUE))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 80)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 80)))
-)
-
-;;----------------------------------
-;;
-;;    T5: Heavy Rain
-;;    Speed Limit: 50 km/h
-;;----------------------------------
-(defrule AGENT::scenario-heavy-rain
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj senzor)
-        (percept_pname vreme)
-        (percept_pval ploaie_torentiala)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TIME 5> Heavy Rain - Mandatory Speed Limit 50 km/h" crlf))
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <INDICATOR> Curba_deosebit_de_periculoasa in afara localitatii perceputa" crlf))
     (modify ?s (bel_pval TRUE))
     (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 50)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 50)))
+    ; (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))   
+)
+
+(defrule AGENT::indicator-curba-deosebit-de-periculoasa-in-localitate
+    (declare (salience 25))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval indicator))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval atentionare))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname valoare) (bel_pval curba_deosebit_de_periculoasa))
+    (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50)) ; ne folosim de limita de viteza default ca sa ne dam seama ca suntem in localitate
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <INDICATOR> Curba_deosebit_de_periculoasa in interiorul localitatii perceputa" crlf))
+    (modify ?s (bel_type TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 30)))
+    ; (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))   
+)
+
+;-------Chiar la final-----------
+; verifica daca nu s-a stabilit niciun belief MOMENT de speed limit,
+; then ia speed limit FLUENT si aserteaza-l ca MOMENT
+;--------------------------------
+(defrule AGENT::aserteaza-viteza-tinuta-minte "daca am dat de un indicator de limita viteza, nu il mai vedem, dar ne ramane in cap"
+    (declare (salience 15))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
+    (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed))
+    ?s<-(ag_bel (bel_type moment) (bel_pname kept_in_mind_speed_active))
+=>
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval ?speed)))
+    (modify ?s (bel_pval TRUE))
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D><LA FINAL> no rule activated, tinut in minte moment speed_limit is " ?speed crlf))
+)
+
+
+(defrule AGENT::aserteaza-viteza-default "in cazul in care nu s-a activat nicio regula care sa impuna speed_limit MOMENT"
+    (declare (salience 10))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
+    (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval ?speed))
+    (ag_bel (bel_type moment) (bel_pname kept_in_mind_speed_active) (bel_pval FALSE))
+=>
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval ?speed)))
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <D><LA FINAL> no rule activated, default moment speed_limit is " ?speed crlf))
+)
+
+
+;;----------------------------------
+;;
+;;    New feature
+;;    Calculul distantei de adaptare a vitezei pentru indicatorul cerut
+;;
+;;----------------------------------
+(deffunction AGENT::calcule (?v0 ?v1 ?miu ?k)
+    ;; miu este coeficientul de frecare al automobilului cu drumul
+    ;; pentru turisme mici, un miu bun ar fi 0.75
+    ;; pentru tiruri, ceva mai mic, un 0.65
+
+    ;; k este un coeficient ce determina eficienta franelor automobilului
+
+
+    ;; Conversia vitezelor din km/h în m/s
+    (bind ?v0_metri (/ ?v0 3.6)) 
+    (bind ?v1_metri (/ ?v1 3.6)) 
+    
+    ;; Definirea accelerației gravitaționale
+    (bind ?g 9.81) ;; în m/s^2
+    
+    ;; Calculează distanța de frânare
+    (bind ?distanta (/ (- (* ?v0_metri ?v0_metri) (* ?v1_metri ?v1_metri)) 
+                       (* 2 ?k ?miu ?g)))
+    
+    ;; Returnează distanța calculată
+    (return ?distanta)
+)
+
+(defrule AGENT::reducing-distance-computation-1 "cazul in care soferul trebuie sa reduca de la default_speed_limit de pe categoria respectiva de drum la valoarea data de indicator"
+    (declare (salience 10)) ; chiar ultima ultima
+    (timp (valoare ?))
+    ?r1 <- (trigger-computation-rule ?final_speed)
+    (ag_bel (bel_pname kept_in_mind_speed_active) (bel_pval FALSE))
+    (ag_bel (bel_pname default_speed_limit) (bel_pval ?initial_speed))
+=>
+    (retract ?r1)
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "...initial speed is " ?initial_speed crlf))
+    (bind ?distanta (calcule ?initial_speed ?final_speed 0.75 0.85))
+    (assert (ag_bel (bel_type moment) (bel_pobj tag_reducing_dist) (bel_pname distanta_in_metri_in_care_masina_poate_reduce_viteza) (bel_pval ?distanta)))
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "Distanta de reducere a vitezei de la " ?initial_speed " la " ?final_speed " este: " ?distanta " metri" crlf))
+)
+;---------Delete auxiliary facts which are no longer needed ----------
+;
+; Programmer's task
+;
+
+;;;; Catalina
+
+(defrule AGENT::initCycle-viteza-autostrada
+    (declare (salience 89))
+    (timp (valoare 1))
+    (ag_bel (bel_type moment) (bel_pname is_a) (bel_pval autostrada))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <DEFAULT SPEED> 130 by default as fluent bel" crlf))
+    (assert (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 130)))
+    (facts AGENT)
 )
 
 ;;----------------------------------
 ;;
-;;    T6: Rain Stops
-;;    Speed Limit: Resume to 130 km/h
-;;----------------------------------
-(defrule AGENT::scenario-rain-stops
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj senzor)
-        (percept_pname vreme)
-        (percept_pval senin)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-=>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TIME 6> Rain Stops - Resuming Normal Speed 130 km/h" crlf))
-    (modify ?s (bel_pval TRUE))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 130)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 130)))
-)
-
-;;----------------------------------
+;;    Senzor vizibilitate redusa
 ;;
-;;    T7: Exit Highway
-;;    Speed Limit: 90 km/h (National Road)
 ;;----------------------------------
-(defrule AGENT::scenario-exit-highway
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname iesire_autostrada)
-        (percept_pval yes)
-    )
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname tip_drum)
-        (percept_pval national)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
+(defrule AGENT::senzor-vizibilitate-redusa-afara
+    (declare (salience 25))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval senzor))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval vizibilitate_redusa))
+    (not (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50))) 
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
 =>
-    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TIME 7> Exiting Highway - Speed Limit 90 km/h (National Road)" crlf))
-    (modify ?s (bel_pval TRUE))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 90)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 90)))
-)
-
-;;---------------------------------- 
-;; T1: Entering Locality 
-;; Speed Limit: 50 km/h 
-;;----------------------------------
-(defrule AGENT::scenario-enter-locality
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname indicator)
-        (percept_pval localitate_in)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-    =>
-    (if (eq ?*ag-in-debug* TRUE) then 
-        (printout t "    <TIME 1> Entering Locality - Speed Limit 50 km/h" crlf)
-    )
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <INDICATOR> Vizibilitate redusa a in afara localitatii perceputa" crlf))
     (modify ?s (bel_pval TRUE))
     (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 50)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 50)))
+    ; (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))   
 )
 
-;;---------------------------------- 
-;; T2: Rainy Conditions 
-;; Speed Limit: 30 km/h 
-;;----------------------------------
-(defrule AGENT::scenario-rainy-conditions
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj senzor)
-        (percept_pname stare_vreme)
-        (percept_pval ploaie_torentiala)
-    )
-    (ag_percept
-        (percept_pobj senzor)
-        (percept_pname vizibilitate)
-        (percept_pval redusa)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-    =>
-    (if (eq ?*ag-in-debug* TRUE) then 
-        (printout t "    <TIME 2> Rainy Conditions - Reduced Speed Limit 30 km/h" crlf)
-    )
-    (modify ?s (bel_pval TRUE))
+(defrule AGENT::senzor-vizibilitate-redusa-localitate
+    (declare (salience 25))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval senzor))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval vizibilitate_redusa))
+    (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50)) ; ne folosim de limita de viteza default ca sa ne dam seama ca suntem in localitate
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <INDICATOR> Vizibilitate redusa in interiorul localitatii perceputa" crlf))
+    (modify ?s (bel_type TRUE))
     (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 30)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 30)))
+    ; (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))   
 )
 
-;;---------------------------------- 
-;; T3: School Zone 
-;; Speed Limit: 30 km/h 
-;;----------------------------------
-(defrule AGENT::scenario-school-zone
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname indicator)
-        (percept_pval scoala)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-    =>
-    (if (eq ?*ag-in-debug* TRUE) then 
-        (printout t "    <TIME 3> School Zone - Speed Limit 30 km/h" crlf)
-    )
+(defrule AGENT::senzor-vizibilitate-redusa-autostrada
+    (declare (salience 25))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval senzor))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval vizibilitate_redusa))
+    (not (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50)))
+    (not (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 90))) 
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <INDICATOR> Vizibilitate redusa autostrada" crlf))
     (modify ?s (bel_pval TRUE))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 30)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 30)))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 50)))
+    ; (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))   
 )
 
-;;---------------------------------- 
-;; T4: Pedestrian Crossing with Red Light 
-;; Speed Limit: 0 km/h (Full Stop) 
 ;;----------------------------------
-(defrule AGENT::scenario-pedestrian-crossing
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname indicator)
-        (percept_pval trecere_pietoni)
-    )
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname semafor)
-        (percept_pval rosu)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-    =>
-    (if (eq ?*ag-in-debug* TRUE) then 
-        (printout t "    <TIME 4> Pedestrian Crossing with Red Light - Full Stop" crlf)
-    )
-    (modify ?s (bel_pval TRUE))
-    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 0)))
+;;
+;;    Trecere tren
+;;
+;;----------------------------------
+(defrule AGENT::trecere-tren-fara-bariera
+    (declare (salience 20))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname is_a) (bel_pval trecere_tren))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname bariera) (bel_pval no))
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TRAIN> tren" crlf))
+    (modify ?s (bel_type TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))    
 )
 
-;;---------------------------------- 
-;; T5: Leaving Locality 
-;; Speed Limit: 90 km/h 
-;;----------------------------------
-(defrule AGENT::scenario-leave-locality
-    (declare (salience 100))
-    (timp (valoare ?t))
-    (ag_percept
-        (percept_pobj semn)
-        (percept_pname indicator)
-        (percept_pval localitate_out)
-    )
-    (ag_percept
-        (percept_pobj senzor)
-        (percept_pname stare_vreme)
-        (percept_pval senin)
-    )
-    (ag_percept
-        (percept_pobj senzor)
-        (percept_pname vizibilitate)
-        (percept_pval normala)
-    )
-    ?s <- (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE))
-    =>
-    (if (eq ?*ag-in-debug* TRUE) then 
-        (printout t "    <TIME 5> Leaving Locality - Speed Limit 90 km/h" crlf)
-    )
+(defrule AGENT::trecere-tren-cu-bariera-afara
+    (declare (salience 25))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval trecere_tren))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname bariera) (bel_pval yes))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname stare_bariera) (bel_pval bariera_sus))
+    (not (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50))) 
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TRAIN> tren" crlf))
     (modify ?s (bel_pval TRUE))
     (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 90)))
-    (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval 90)))
+    ; (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))   
+)
+
+(defrule AGENT::trecere-tren-cu-bariera-localitate
+    (declare (salience 25))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval trecere_tren))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname bariera) (bel_pval yes))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname stare_bariera) (bel_pval bariera_sus))
+    (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50)) ; ne folosim de limita de viteza default ca sa ne dam seama ca suntem in localitate
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TRAIN> tren"  crlf))
+    (modify ?s (bel_type TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 50)))
+    ; (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))   
+)
+
+(defrule AGENT::trecere-tren-cu-bariera-afara
+    (declare (salience 25))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval trecere_tren))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname bariera) (bel_pval yes))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname stare_bariera) (bel_pval bariera_jos))
+    (not (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50))) ; ne folosim de limita de viteza default ca sa ne dam seama ca nu suntem in localitate
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TRAIN> tren"  crlf))
+    (modify ?s (bel_pval TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))
+    ; (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))   
+)
+
+(defrule AGENT::trecere-tren-cu-bariera-localitate
+    (declare (salience 25))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval trecere_tren))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname bariera) (bel_pval yes))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname stare_bariera) (bel_pval bariera_jos))
+    (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50)) ; ne folosim de limita de viteza default ca sa ne dam seama ca suntem in localitate
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <TRAIN> tren"  crlf))
+    (modify ?s (bel_type TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))
+    ; (assert (ag_bel (bel_type fluent) (bel_pname speed_limit) (bel_pval ?speed)))   
+)
+
+;;----------------------------------
+;;
+;;    Scoala
+;;
+;;----------------------------------
+(defrule AGENT::scoala
+    (declare (salience 20))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname is_a) (bel_pval indicator))
+    (ag_bel (bel_type moment) (bel_pobj ?tp) (bel_pname semnificatie) (bel_pval scoala))
+    ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists))
+=>
+    (if (eq ?*ag-in-debug* TRUE) then (printout t "    <SCHOOL> Scoala" crlf))
+    (modify ?s (bel_type TRUE))
+    (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 30)))    
 )

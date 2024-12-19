@@ -12,7 +12,7 @@
 (defglobal ?*ag-tic-in-debug* = FALSE)
 
 
-(defglobal ?*totalNrRules* = 120) 
+(defglobal ?*totalNrRules* = 180) 
 
 ;
 ;----------Modul: PERCEPT-MANAGER-----------
@@ -26,7 +26,7 @@
 
 (defglobal ?*sim-in-debug* = FALSE)
 (defglobal ?*percepts-in-debug* = FALSE)
-(defglobal ?*perceptsDir* = "./Teste/Test_Localitate_C/")
+(defglobal ?*perceptsDir* = "./Teste/Test_Afara_C/")
 
 
 (deftemplate PERCEPT-MANAGER::timp (slot valoare))
