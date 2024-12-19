@@ -2,6 +2,14 @@
 ;-------Auxiliary facts ---------------------------------------
 ;
 
+(defrule AGENT::initCycle-distanta-parcursa-limo-speed
+    (declare (salience 90))
+    (timp (valoare 1))
+=>
+    (assert (ag_bel (bel_type fluent) (bel_pname distanta_parcursa) (bel_pval 0)))
+    (assert (ag_bel (bel_type fluent) (bel_pname indicator_perceput) (bel_pval FALSE)))
+)
+
 (defrule AGENT::initCycle-exista-speed_limit-moment "presupun ca la final de tot nu exista speed_limit MOMENT"
     (declare (salience 90))
     (timp (valoare ?))
@@ -55,7 +63,7 @@
     (if (eq ?*ag-in-debug* TRUE) then (printout t "    <SEMAFOR> Semafor perceput, culoare " ?color crlf))
     (assert (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval 0)))    
     (modify ?s (bel_pval TRUE))
- )
+)
 
 ;  (defrule AGENT::semafor-galben-rosu-with-speed-limit  ;FIXME: adapt
 ;     (declare (salience 20))
@@ -140,6 +148,7 @@
     (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval indicator))
     (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval impunere_restrictie_viteza))
     (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname valoare) (bel_pval ?speed))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname distanta_pana_la_indicator) (bel_pval 0))
     ?s<-(ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval ?val))
     (test (eq ?val FALSE))
 =>
@@ -301,3 +310,68 @@
 ;
 ; Programmer's task
 ;
+
+
+;---------Auxiliary task: when indicator perceived from distance (nu esti fix in dreptul lui, aka mai ai fix 0 metri pana la el)
+;     sa asertezi viteza corecta a masinii
+(deffunction AGENT::calcule-viteza-decrementala (?v0 ?acc ?delta_x)
+    (bind ?v1 (sqrt (+ (* ?v0 ?v0) (* 2 ?acc ?delta_x)))) ; Galilei's equation
+    (return ?v1)
+)
+
+(defrule AGENT::indicator-start-la-distanta
+    (declare (salience 8)) ; la final, dupa ce deja am determinat limita de viteza maxima admisa
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval indicator))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval impunere_restrictie_viteza))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname valoare) (bel_pval ?speed))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname distanta_pana_la_indicator) (bel_pval ?dist))
+    ?nr_ind_perc <- (ag_bel (bel_type fluent) (bel_pname indicator_perceput) (bel_pval FALSE)) ; daca abia acum incep sa percep indicatorul
+    ?nr_dist <- (ag_bel (bel_type fluent) (bel_pname distanta_parcursa) (bel_pval ?dist_parcurs))
+    (ag_bel (bel_type moment) (bel_pname speed_limit) (bel_pval ?get_speed)); get determined speed limit
+=>
+    (modify ?nr_ind_perc (bel_pval TRUE)) ; marchez ca am inceput sa masor distanta parcursa de masina
+    (assert (ag_bel (bel_type fluent) (bel_pname ultima_borna) (bel_pval ?dist))) ; tinem minte care e ultima distanta vazuta, pentru ca la timpul urmator sa pot face delta x
+    (assert (ag_bel (bel_type moment) (bel_pname limo_speed_limit) (bel_pval ?get_speed))) ; evident ca la momentul 0 in care vad indicatorul nu apuc sa reduc viteza
+    (assert (ag_bel (bel_type fluent) (bel_pname limo_speed_limit) (bel_pval ?get_speed))) ; evident ca la momentul 0 in care vad indicatorul nu apuc sa reduc viteza
+)
+
+(defrule AGENT::indicator-meanwhile-la-distanta
+    (declare (salience 8))
+    (timp (valoare ?))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval indicator))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname semnificatie) (bel_pval impunere_restrictie_viteza))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname valoare) (bel_pval ?speed))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname distanta_pana_la_indicator) (bel_pval ?dist))
+    (test (> ?dist 0))
+    ?nr_ultima_borna <- (ag_bel (bel_type fluent) (bel_pname ultima_borna) (bel_pval ?ultima_borna))
+    ?nr_ind_perc <- (ag_bel (bel_type fluent) (bel_pname indicator_perceput) (bel_pval TRUE)) ; daca abia acum incep sa percep indicatorul
+    ?nr_dist <- (ag_bel (bel_type fluent) (bel_pname distanta_parcursa) (bel_pval ?dist_parcurs))
+    ?nr_fluent_sp_lim <- (ag_bel (bel_type fluent) (bel_pname limo_speed_limit) (bel_pval ?initial_speed))
+=>
+    (bind ?delta_x (- ?ultima_borna ?dist))
+    (bind ?new_dist_parcurs (+ ?delta_x ?dist_parcurs))
+    (printout t "New Dist parcurs = " ?new_dist_parcurs " si dist parcurs " ?dist_parcurs crlf)
+    ;(retract ?nr_dist)
+    (bind ?final_sp (calcule-viteza-decrementala ?initial_speed -2.5 ?new_dist_parcurs))
+    (assert (ag_bel (bel_type moment) (bel_pname limo_speed_limit) (bel_pval ?final_sp)))
+    ;(assert (ag_bel (bel_type fluent) (bel_pname limo_speed_limit) (bel_pval ?final_sp)))
+    ;(modify ?nr_fluent_sp_lim (bel_pval ?final_sp))
+    ;(facts AGENT)
+    ;(assert (ag_bel (bel_type fluent) (bel_pname distanta_parcursa) (bel_pval ?new_dist_parcurs)))
+    ; (modify ?nr_dist (bel_pval ?new_dist_parcurs))
+)
+
+(defrule AGENT::indicator-reached
+    (declare (salience 8))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname is_a) (bel_pval indicator))
+    (ag_bel (bel_type moment) (bel_pobj ?indic) (bel_pname distanta_pana_la_indicator) (bel_pval ?dist&:(= ?dist 0)))
+    ?nr_ind_perc <- (ag_bel (bel_type fluent) (bel_pname indicator_perceput))
+    ?nr_ultima_borna <- (ag_bel (bel_type fluent) (bel_pname ultima_borna))
+=>
+    (modify ?nr_ind_perc (bel_pval FALSE))
+    (retract ?nr_ultima_borna) ; Retractăm ultima bornă
+    (retract ?nr_ind_perc) ; Retractăm ultima bornă
+
+    (printout t "Indicatorul a fost atins sau depășit." crlf)
+)

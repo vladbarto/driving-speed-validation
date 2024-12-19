@@ -12,7 +12,7 @@
 (defglobal ?*ag-tic-in-debug* = FALSE)
 
 
-(defglobal ?*totalNrRules* = 133) ; trial and error
+(defglobal ?*totalNrRules* = 220) ; trial and error
 
 ;
 ;----------Modul: PERCEPT-MANAGER-----------
