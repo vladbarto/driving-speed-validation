@@ -26,7 +26,7 @@
 
 (defglobal ?*sim-in-debug* = FALSE)
 (defglobal ?*percepts-in-debug* = FALSE)
-(defglobal ?*perceptsDir* = "./Teste/Test_Localitate_B/")
+(defglobal ?*perceptsDir* = "./Teste/Test_Localitate_C/")
 
 
 (deftemplate PERCEPT-MANAGER::timp (slot valoare))
@@ -48,7 +48,7 @@
 (defglobal ?*ag-in-debug* = FALSE)
 (defglobal ?*ag-percepts-in-debug* = FALSE)
 
-(defglobal ?*ag-measure-time* = FALSE)
+(defglobal ?*ag-measure-time* = TRUE)
 
 (deftemplate ag_bel
     (slot bel_type) ; fluent|moment

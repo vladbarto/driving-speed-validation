@@ -1,0 +1,80 @@
+         FuzzyCLIPS (6.4 2/9/21)
+FuzzyCLIPS> TRUE
+FuzzyCLIPS> (clear)
+FuzzyCLIPS> (printout t "---NEW-------------------------------" crlf)
+---NEW-------------------------------
+FuzzyCLIPS> (load "headers.clp")
++%:::+:::%%+:::%
+TRUE
+FuzzyCLIPS> (load "MAIN-rules.clp")
+*
+TRUE
+FuzzyCLIPS> (load "PERCEPT-MANAGER.clp")
+**
+TRUE
+FuzzyCLIPS> (load "AddMomentBelifsGetStartTime.clp")
+**
+TRUE
+FuzzyCLIPS> (load "DRIVER-AGENT.clp")
+****************!***********!***
+TRUE
+FuzzyCLIPS> (load "TellDeleteMomentBelifsGetEndTime.clp")
+***
+TRUE
+FuzzyCLIPS> (load "initials.clp")
+$$
+TRUE
+FuzzyCLIPS> (load "maneuverValidityASK.clp")
+$
+TRUE
+FuzzyCLIPS> (reset)
+FuzzyCLIPS> (run ?*totalNrRules*)
+   PERCEPT-MANAGER: timp = 1
+f-3     (ASK speed_limit) CF 1.00 
+f-4     (ASK distanta_in_metri_in_care_masina_poate_reduce_viteza) CF 1.00 
+f-5     (ASK limo_speed_limit) CF 1.00 
+f-8     (timp (valoare 1)) CF 1.00 
+f-9     (ag_percept (percept_pname is_a) (percept_pval localitate) (percept_pobj locatie)) CF 1.00 
+f-11    (tstart 1736249801.35862) CF 1.00 
+f-12    (ag_bel (bel_type moment) (bel_pname is_a) (bel_pval localitate) (bel_pobj locatie)) CF 1.00 
+f-13    (ag_bel (bel_type moment) (bel_pname speed_limit_exists) (bel_pval FALSE) (bel_pobj nil)) CF 1.00 
+f-14    (ag_bel (bel_type moment) (bel_pname kept_in_mind_speed_active) (bel_pval FALSE) (bel_pobj nil)) CF 1.00 
+f-15    (ag_bel (bel_type fluent) (bel_pname default_speed_limit) (bel_pval 50) (bel_pobj nil)) CF 1.00 
+For a total of 10 facts.
+         AGENT speed_limit 50
+            <M> AGENT Decision time: 6.19888305664062e-05 sec.
+   PERCEPT-MANAGER: timp = 2
+         AGENT speed_limit 30
+            <M> AGENT Decision time: 2.19345092773438e-05 sec.
+   PERCEPT-MANAGER: timp = 3
+         AGENT speed_limit 30
+            <M> AGENT Decision time: 2.81333923339844e-05 sec.
+   PERCEPT-MANAGER: timp = 4
+         AGENT speed_limit 0
+            <M> AGENT Decision time: 1.88350677490234e-05 sec.
+   PERCEPT-MANAGER: timp = 5
+         AGENT speed_limit 0
+            <M> AGENT Decision time: 1.50203704833984e-05 sec.
+   PERCEPT-MANAGER: timp = 6
+         AGENT speed_limit 50
+            <M> AGENT Decision time: 1.50203704833984e-05 sec.
+   PERCEPT-MANAGER: timp = 7
+         AGENT speed_limit 50
+            <M> AGENT Decision time: 9.05990600585938e-06 sec.
+   PERCEPT-MANAGER: timp = 8
+         AGENT distanta_in_metri_in_care_masina_poate_reduce_viteza 12.9549309058014
+         AGENT speed_limit 20
+            <M> AGENT Decision time: 3.50475311279297e-05 sec.
+   PERCEPT-MANAGER: timp = 9
+         AGENT speed_limit 50
+            <M> AGENT Decision time: 1.78813934326172e-05 sec.
+   PERCEPT-MANAGER: timp = 10
+         AGENT speed_limit 50
+            <M> AGENT Decision time: 8.10623168945312e-06 sec.
+   PERCEPT-MANAGER: timp = 11
+         AGENT speed_limit 50
+            <M> AGENT Decision time: 8.10623168945312e-06 sec.
+   PERCEPT-MANAGER: timp = 12
+         AGENT speed_limit 50
+            <M> AGENT Decision time: 8.10623168945312e-06 sec.
+FuzzyCLIPS> 
